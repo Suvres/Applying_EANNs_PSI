@@ -4,6 +4,9 @@
 #region Includes
 using System;
 using System.Collections.Generic;
+using System.IO;
+using General;
+
 #endregion
 
 /// <summary>
@@ -75,17 +78,37 @@ public class Agent : IComparable<Agent>
 
         //Construct FNN from genotype
         IEnumerator<float> parameters = genotype.GetEnumerator();
+        
+        // TODO - Generowanie JSON
+        // ta część generuje plik z wagami dla naszego skryptu - dlatego potrzeba pliku weights.json do którego ścieżka jest podana w pliku General\Config
+        string json = "[";
+        int c = 0;
         foreach (NeuralLayer layer in FNN.Layers) //Loop over all layers
         {
+            json += (c != 0 ? ",": "") + "[";
             for (int i = 0; i < layer.Weights.GetLength(0); i++) //Loop over all nodes of current layer
             {
+                json += (i != 0 ? ",": "") + "[";
                 for (int j = 0; j < layer.Weights.GetLength(1); j++) //Loop over all nodes of next layer
                 {
                     layer.Weights[i,j] = parameters.Current;
+                    json += (j == 0 ? "" : ",") + parameters.Current.ToString().Replace(",", ".");
                     parameters.MoveNext();
                 }
+
+                json += "]";
             }
+
+            c = 1;
+            json += "]";
         }
+        
+        Config conf = Config.Instance;
+        json += "]";
+        TextWriter writer = null;
+        writer = new StreamWriter(conf.weightsPath, false);
+        writer.Write(json);
+        writer.Close();
     }
     #endregion
 
