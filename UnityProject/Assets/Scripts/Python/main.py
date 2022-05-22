@@ -40,15 +40,15 @@ def transposeOneDim(A, reverse: bool = False):
 
 
 class net(nn.Module):
-    def __init__(self, inputs: List):
+    def __init__(self, inputs: List, outputs):
         super(net, self).__init__()
         self.fc = []
         self.sig = nn.Sigmoid()
 
         for i in range(len(inputs)):
             i_size = inputs[i]
-            o_size = inputs[i + 1] - 1 if i < len(inputs) - 1 else 2
-
+            o_size = inputs[i + 1] - 1 if i < len(inputs) - 1 else outputs
+            
             self.fc = [*self.fc, nn.Linear(i_size, o_size, bias=False)]
 
     def calc(self, weights: List, inputs):
@@ -67,17 +67,19 @@ class net(nn.Module):
         return output
 
 
-args = np.array(sys.argv[1:], dtype=float).tolist()
-file = './weights.json'
+args = np.array(sys.argv[2:], dtype=float).tolist()
+outputs = int(args[-1])
+args = args[:-1]
+file = sys.argv[1]
 
 input_file = open(file)
 weights = json.load(input_file)
 
 weightsList = [len(w) for w in weights]
 
-n = net(weightsList)
+n = net(weightsList, outputs)
 outputs = n.calc(weights=weights, inputs=args)
 
-sys.stdout.write('{0:f}, {1:f}'.format(outputs[0], outputs[1]))
+sys.stdout.write('{0:f}\n{1:f}'.format(outputs[0], outputs[1]))
 sys.stdout.flush()
 exit(1)
