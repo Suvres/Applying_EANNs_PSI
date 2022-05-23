@@ -38,6 +38,11 @@ namespace PSI
             set;
         }
 
+        public void Start()
+        {
+            values = new float[count];
+        }
+
         public void Update()
         {
             float startAngle = -angleCone / 2.0f;
