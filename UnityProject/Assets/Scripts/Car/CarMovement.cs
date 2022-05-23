@@ -12,9 +12,7 @@ namespace PSI
         private const float ACCELERATION = 8f;
         private const float VEL_FRICT = 2f;
         private const float TURN_SPEED = 100;
-
-        private float[] inputs;
-
+        
         [SerializeField]
         private float verticalInput;
         [SerializeField]
@@ -40,7 +38,7 @@ namespace PSI
             ApplyFriction();
         }
 
-        public void SetInputs(float[] Inputs)
+        public void SetInputs(float[] inputs)
         {
             verticalInput = Mathf.Clamp(inputs[0], -1.0f, 1.0f);
             horizontalInput = Mathf.Clamp(inputs[1], -1.0f, 1.0f);
@@ -69,7 +67,7 @@ namespace PSI
 
             //Set rotation
             Rotation = transform.rotation;
-            Rotation *= Quaternion.AngleAxis((float)-horizontalInput * TURN_SPEED * Time.deltaTime, new Vector3(0, 0, 1));
+            Rotation *= Quaternion.AngleAxis((float)-horizontalInput * TURN_SPEED * Time.deltaTime, new Vector3(0, 1, 0));
         }
 
         private void ApplyVelocity()

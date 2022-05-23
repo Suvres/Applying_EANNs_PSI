@@ -71,13 +71,13 @@ namespace PSI
             int c = 0;
             int parametIndex = 0;
 
-            for(int LayerIndex = 0; LayerIndex < Layers.Length-1; LayerIndex++) //Loop over all layers
+            for(int LayerIndex = 0; LayerIndex < Layers.Length - 1; LayerIndex++) //Loop over all layers
             {
                 json += (c != 0 ? "," : "") + "[";
-                for (int i = 0; i < Layers[LayerIndex]; i++) //Loop over all nodes of current layer
+                for (int i = 0; i < Layers[LayerIndex]+1; i++) //Loop over all nodes of current layer
                 {
                     json += (i != 0 ? "," : "") + "[";
-                    for (int j = 0; j < Layers[LayerIndex + 1]; j++) //Loop over all nodes of next layer
+                    for (int j = 0; j < Layers[LayerIndex] - 1; j++) //Loop over all nodes of next layer
                     {
                         json += (j == 0 ? "" : ",") + parameters[parametIndex].ToString().Replace(",", ".");
                         parametIndex++;

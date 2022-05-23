@@ -28,12 +28,12 @@ namespace PSI
         {
             string fileName = Name + ".json";
             Genotype.GenerateWeightsFile(fileName);
-
-            string arguments = "B:\\Projekty\\Applying_EANNs_PSI\\UnityProject\\Assets\\Scripts\\Python\\main.py";
-            arguments += " " + fileName;
+            
+            string arguments = "/home/suvres/Dokumenty/others/Applying_EANNs_PSI/UnityProject/Assets/Scripts/Python/main.py";
+            arguments += " /home/suvres/Dokumenty/others/Applying_EANNs_PSI/UnityProject/" + fileName;
             foreach(float input in inputs)
             {
-                arguments += " B:\\Projekty\\Applying_EANNs_PSI\\UnityProject\\" + input.ToString();
+                arguments += " " + input.ToString();
             }
             arguments += " " + AgentsManager.Get().outputNum.ToString();
 
@@ -43,10 +43,11 @@ namespace PSI
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "C:\\Users\\Alek\\AppData\\Local\\Programs\\Python\\Python39\\python.exe",
+                    FileName = "/usr/bin/python3.8",
                     Arguments = arguments,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     CreateNoWindow = false
                 }
             };
@@ -54,16 +55,18 @@ namespace PSI
             proc.Start();
 
             string line = proc.StandardOutput.ReadToEnd();
-
+            string error = proc.StandardError.ReadToEnd();
             proc.WaitForExit();
 
-            controller.msg(line);
+            controller.msg("output: "+line);
+            controller.msg("error: "+error);
 
             float[] outputs = new float[AgentsManager.Get().outputNum];
 
-            string[] outputsStr = line.Split(' ');
+            string[] outputsStr = line.Replace('.', ',').Split(' ');
             for (int i = 0; i < outputsStr.Length; i++)
-            {
+            { 
+                controller.msg(outputsStr[i]);
                 outputs[i] = float.Parse(outputsStr[i]);
             }
 

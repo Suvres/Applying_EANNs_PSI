@@ -80,6 +80,6 @@ weightsList = [len(w) for w in weights]
 n = net(weightsList, outputs)
 outputs = n.calc(weights=weights, inputs=args)
 
-sys.stdout.write('{0:f}\n{1:f}'.format(outputs[0], outputs[1]))
+sys.stdout.write('{0:f} {1:f}'.format(outputs[0], outputs[1]))
 sys.stdout.flush()
 exit(1)
