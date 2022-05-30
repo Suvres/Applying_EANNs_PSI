@@ -32,6 +32,7 @@ namespace PSI
             get { return Agent.Genotype.Evaluation; }
             set { Agent.Genotype.Evaluation = value; }
         }
+        public float reward;
 
         public void Awake()
         {
@@ -51,11 +52,15 @@ namespace PSI
             Debug.Log(txt);
         }
 
+        float timer = 0.0f;
         public void Update()
         {
             timeSinceLastCheckpoint += Time.deltaTime;
+            timer += Time.deltaTime;
+            reward = Reward;
         }
 
+        bool waiting = false;
         public void FixedUpdate()
         {
             if (!Alive)
@@ -63,17 +68,31 @@ namespace PSI
 
             if (timeSinceLastCheckpoint > MAX_CHECKPOINT_DELAY)
             {
-                // Die();
-                Alive = false;
+                Die();
                 return;
             }
 
-            movement.SetInputs(Agent.Run(sensor.Values));
+            if (waiting) 
+                return;
+
+            if (timer < 1.0f)
+                return;
+            timer = 0.0f;
+
+            waiting = true;
+            Agent.SendInput(sensor.Values);
         }
 
-        private void OnCollisionEnter(Collision collision)
+        public void ReciveOutput(float[] outputs)
         {
-            if(collision.gameObject.CompareTag("Wall"))
+            //Agent.CloseProcess();
+            movement.SetInputs(outputs);
+            waiting = false;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.gameObject.CompareTag("Wall"))
             {
                 Die();
             }
@@ -82,6 +101,8 @@ namespace PSI
         public void Die()
         {
             Alive = false;
+            Agent.CloseProcess();
+            AgentsManager.Get().DescreaseAlive();
         }
 
         public void CheckpointCaptured()
@@ -91,9 +112,10 @@ namespace PSI
 
         public void Restart()
         {
+            movement.SetInputs(new float[] { 0f, 0f });
+            Agent.Reset();
             Alive = true;
             timeSinceLastCheckpoint = 0;
-            Agent.Reset();
         }
     }
 }

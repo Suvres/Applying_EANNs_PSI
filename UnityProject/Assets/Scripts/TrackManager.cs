@@ -67,8 +67,9 @@ namespace PSI
             }
         }
 
-        public void Spawn(int Count)
+        public Agent[] Spawn(int Count)
         {
+            Agent[] agents = new Agent[Count];
             cars = new List<Car>();
             for (int i = 0; i < Count; i++)
             {
@@ -77,7 +78,9 @@ namespace PSI
                 controller.Construct(i, (uint)AgentsManager.Get().WeightCount);
                 controller.Alive = true;
                 cars.Add(new Car(controller, 0));
+                agents[i] = controller.Agent;
             }
+            return agents;
         }
 
         public void Update()
@@ -108,6 +111,16 @@ namespace PSI
             {
                 //Return accumulated reward of last checkpoint + reward of distance to next checkpoint
                 return checkpoints[curCheckpointIndex - 1].AccumulatedReward + checkpoints[curCheckpointIndex].GetRewardValue(checkPointDistance);
+            }
+        }
+
+        public void Restart()
+        {
+            foreach (var car in cars)
+            {
+                car.Controller.Restart();
+                car.Controller.gameObject.transform.position = StartPoint.position;
+                car.Controller.gameObject.transform.rotation = StartPoint.rotation;
             }
         }
     }

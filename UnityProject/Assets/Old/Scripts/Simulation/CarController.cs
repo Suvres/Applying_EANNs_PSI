@@ -110,11 +110,14 @@ public class CarController : MonoBehaviour
         this.enabled = true;
     }
 
+    float timer = 1.0f;
     // Unity method for normal update
     void Update()
     {
         timeSinceLastCheckpoint += Time.deltaTime;
+        timer += Time.deltaTime;
     }
+
 
     // Unity method for physics update
     void FixedUpdate()

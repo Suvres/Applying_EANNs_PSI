@@ -85,10 +85,10 @@ while True:
     args = args[1:].astype(np.float64)
    
     outputs = n.calc(weights=weights, inputs=args)
-    
     sys.stdout.write('{0:f}'.format(outputs[0]))
     for i in range(1, len(outputs)):
         sys.stdout.write(' {0:f}'.format(outputs[i]))
     
     sys.stdout.write('\n')
     sys.stdout.flush()
+

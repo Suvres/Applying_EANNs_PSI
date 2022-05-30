@@ -8,10 +8,10 @@ namespace PSI
     public class CarMovement : MonoBehaviour
     {
 
-        private const float MAX_VEL = 20f;
-        private const float ACCELERATION = 8f;
+        private const float MAX_VEL = 10f;
+        private const float ACCELERATION = 4f;
         private const float VEL_FRICT = 2f;
-        private const float TURN_SPEED = 100;
+        private const float TURN_SPEED = 50;
         
         [SerializeField]
         private float verticalInput;
@@ -72,7 +72,7 @@ namespace PSI
 
         private void ApplyVelocity()
         {
-            Vector3 direction = new Vector3(0, 1, 0);
+            Vector3 direction = new Vector3(0, 0, 1);
             transform.rotation = Rotation;
             direction = Rotation * direction;
 
@@ -96,14 +96,6 @@ namespace PSI
                     if (Velocity > 0)
                         Velocity = 0;
                 }
-            }
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-            if(collision.gameObject.CompareTag("Wall"))
-            {
-                Controller.Die();
             }
         }
     }
