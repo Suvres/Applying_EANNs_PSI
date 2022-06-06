@@ -69,7 +69,6 @@ namespace PSI
             float[] output = new float[outputCount];
 
             string[] outputsStr = e.Replace('.', ',').Split(' ');
-            ConsoleHandle.Log(e);
             for (int i = 0; i < outputCount; i++)
             {
                 float.TryParse(outputsStr[i], out output[i]);

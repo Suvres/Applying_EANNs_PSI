@@ -96,6 +96,7 @@ namespace PSI
 
             foreach(var car in cars)
             {
+                if(car.Controller.Agent.Running)
                 car.Controller.Reward = GetCompletePerc(car.Controller, ref car.CheckpointIndex);
             }
         }
@@ -114,8 +115,7 @@ namespace PSI
                 return curCheckpointIndex;
             }
 
-            float currentPercentage = distanceToNext / checkpoints[curCheckpointIndex].DistanceToNext;
-
+            float currentPercentage = ( checkpoints[curCheckpointIndex].DistanceToNext - distanceToNext )/ checkpoints[curCheckpointIndex].DistanceToNext;
             return curCheckpointIndex + currentPercentage;
         }
     }
