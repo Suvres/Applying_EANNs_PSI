@@ -69,8 +69,12 @@ namespace PSI
             float[] output = new float[outputCount];
 
             string[] outputsStr = e.Replace('.', ',').Split(' ');
+            if (outputsStr.Length < 2)
+                return;
+
             for (int i = 0; i < outputCount; i++)
             {
+                ConsoleHandle.Log(outputCount + " / " + output.Length + " / " + outputsStr.Length + " / " + i + " / " + e);
                 float.TryParse(outputsStr[i], out output[i]);
             }
 
@@ -97,7 +101,8 @@ namespace PSI
             process.ErrorTextReceived += Process_ErrorTextReceived;
             process.StandartTextReceived += Process_StandartTextReceived;
 
-            process.ExecuteAsync("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", arguments);
+            //process.ExecuteAsync("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", arguments);
+           process.ExecuteAsync("B:/Programy/Python3_9/python.exe", arguments);
         }
 
         public void SendInput(float[] inputs)
