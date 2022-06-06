@@ -6,11 +6,7 @@ namespace PSI
 {
     public class TrackManager : MonoBehaviour
     {
-        public static TrackManager Instance
-        {
-            get;
-            private set;
-        }
+        private static TrackManager instance;
 
         public float TrackLength
         {
@@ -41,50 +37,63 @@ namespace PSI
 
         public void Awake()
         {
-            Instance = this;
+            instance = this;
 
             CalculateCheckpointPercentages();
         }
 
         private void CalculateCheckpointPercentages()
         {
-            checkpoints[0].AccumulatedDistance = 0; //First checkpoint is start
-                                                    //Iterate over remaining checkpoints and set distance to previous and accumulated track distance.
-            for (int i = 1; i < checkpoints.Length; i++)
+            for (int i = 0; i < checkpoints.Length - 1; i++)
             {
-                checkpoints[i].DistanceToPrevious = Vector2.Distance(checkpoints[i].transform.position, checkpoints[i - 1].transform.position);
-                checkpoints[i].AccumulatedDistance = checkpoints[i - 1].AccumulatedDistance + checkpoints[i].DistanceToPrevious;
-            }
-
-            //Set track length to accumulated distance of last checkpoint
-            TrackLength = checkpoints[checkpoints.Length - 1].AccumulatedDistance;
-
-            //Calculate reward value for each checkpoint
-            for (int i = 1; i < checkpoints.Length; i++)
-            {
-                checkpoints[i].RewardValue = (checkpoints[i].AccumulatedDistance / TrackLength) - checkpoints[i - 1].AccumulatedReward;
-                checkpoints[i].AccumulatedReward = checkpoints[i - 1].AccumulatedReward + checkpoints[i].RewardValue;
+                checkpoints[i].DistanceToNext = Vector3.Distance(checkpoints[i].transform.position, checkpoints[i + 1].transform.position);
             }
         }
 
-        public Agent[] Spawn(int Count)
+        public void Spawn(int agentsPerSeries)
         {
-            Agent[] agents = new Agent[Count];
             cars = new List<Car>();
-            for (int i = 0; i < Count; i++)
+            for (int i = 0; i < agentsPerSeries; i++)
             {
-                var car = Instantiate(carPrefab, StartPoint.position, StartPoint.rotation) as GameObject;
+                var car = Instantiate(carPrefab, StartPoint.position, StartPoint.rotation);
                 var controller = car.GetComponent<CarController>();
-                controller.Construct(i, (uint)AgentsManager.Get().WeightCount);
-                controller.Alive = true;
                 cars.Add(new Car(controller, 0));
-                agents[i] = controller.Agent;
             }
-            return agents;
+        }
+
+        public void Setup(Agent[] agents, int seriesNumber)
+        {
+            if (seriesNumber * cars.Count >= agents.Length)
+                return;
+
+            foreach (var car in cars)
+            {
+                car.Controller.Restart();
+                car.Controller.gameObject.transform.position = StartPoint.position;
+                car.Controller.gameObject.transform.rotation = StartPoint.rotation;
+            }
+
+            int i = 0;
+            foreach (var car in cars)
+            {
+                car.Controller.Agent = agents[seriesNumber * cars.Count + i];
+                i++;
+            }
+        }
+
+        public void Link()
+        {
+            foreach (var car in cars)
+            {
+                car.Controller.Link();
+            }
         }
 
         public void Update()
         {
+            if (!SimulationManager.Running)
+                return;
+
             foreach(var car in cars)
             {
                 car.Controller.Reward = GetCompletePerc(car.Controller, ref car.CheckpointIndex);
@@ -93,35 +102,21 @@ namespace PSI
 
         private float GetCompletePerc(CarController car, ref uint curCheckpointIndex)
         {
-            //Already all checkpoints captured
-            if (curCheckpointIndex >= checkpoints.Length)
-                return 1;
-
-            //Calculate distance to next checkpoint
-            float checkPointDistance = Vector2.Distance(car.transform.position, checkpoints[curCheckpointIndex].transform.position);
-
-            //Check if checkpoint can be captured
-            if (checkPointDistance <= checkpoints[curCheckpointIndex].CaptureRadius)
+            if(curCheckpointIndex >= checkpoints.Length)
+            {
+                return checkpoints.Length;
+            }
+            float distanceToNext = Vector3.Distance(car.transform.position, checkpoints[curCheckpointIndex + 1].transform.position);
+            if(distanceToNext < 3.0f)
             {
                 curCheckpointIndex++;
-                car.CheckpointCaptured(); //Inform car that it captured a checkpoint
-                return GetCompletePerc(car, ref curCheckpointIndex); //Recursively check next checkpoint
+                car.CheckpointCaptured();
+                return curCheckpointIndex;
             }
-            else
-            {
-                //Return accumulated reward of last checkpoint + reward of distance to next checkpoint
-                return checkpoints[curCheckpointIndex - 1].AccumulatedReward + checkpoints[curCheckpointIndex].GetRewardValue(checkPointDistance);
-            }
-        }
 
-        public void Restart()
-        {
-            foreach (var car in cars)
-            {
-                car.Controller.Restart();
-                car.Controller.gameObject.transform.position = StartPoint.position;
-                car.Controller.gameObject.transform.rotation = StartPoint.rotation;
-            }
+            float currentPercentage = distanceToNext / checkpoints[curCheckpointIndex].DistanceToNext;
+
+            return curCheckpointIndex + currentPercentage;
         }
     }
 }

@@ -7,59 +7,101 @@ namespace PSI
     public class AgentsManager : MonoBehaviour
     {
         private static AgentsManager instance;
-        public static AgentsManager Get() { return instance; }
-
-        [SerializeField]
-        private int agentCount = 1;
-        public int AgentCount
+        public static AgentsManager Instance
         {
-            get
-            {
-                return agentCount;
-            }
+            get => instance;
         }
 
-        public int outputNum = 2;
-        public uint[] Topology;
+        [SerializeField] private int series;
+        [SerializeField] private int agentsPerSeries;
 
-        public int WeightCount
+        [SerializeField] private uint[] topology;
+        [SerializeField] private int outputCount;
+
+        [SerializeField] private int notFinishedAgents;
+
+        public uint[] Topology
+        {
+            get => topology;
+        }
+
+        public int AgentCount
+        {
+            get => series * agentsPerSeries;
+        }
+
+        public int AgentsPerSeries
+        {
+            get => agentsPerSeries;
+        }
+
+        public Agent[] Agents
         {
             get;
             private set;
         }
 
-        public int AliveAgents;
-        private Agent[] agents;
+        public int CurrentSeries;
 
         public void Awake()
         {
             instance = this;
+            CurrentSeries = 0;
+            notFinishedAgents = 0;
         }
 
-        public void Start()
+        public void Spawn()
         {
-            WeightCount = 0;
-            for (int i = 0; i < Topology.Length; i++)
-                WeightCount += (int)((Topology[i] + 1) * Topology[i]); // + 1 for bias node
+            int weightCount = 0;
+            for (int i = 0; i < topology.Length; i++)
+            {
+                weightCount += (int)((topology[i] + 1) * topology[i]); // + 1 for bias node
+            }
 
-            agents = TrackManager.Instance.Spawn(AgentCount);
-            AliveAgents = AgentCount;
-            TrackManager.Instance.Restart();
+            List<Agent> agentsList = new List<Agent>(AgentCount);
+            for(int i = 0; i < AgentCount; i++)
+            {
+                agentsList.Add(new Agent(i, weightCount, outputCount));
+            }
+
+            Agents = agentsList.ToArray();
         }
 
-        public void DescreaseAlive()
+        public void Run()
         {
-            AliveAgents--;
-            if(AliveAgents != 0)
+            if(CurrentSeries >= series)
+            {
+                CurrentSeries = 0;
+                SimulationManager.ChangeStatus(SimulationStatus.GENETICS);
+                return;
+            }
+
+            for (int i = 0; i < agentsPerSeries; i++)
+            {
+                Agents[i + CurrentSeries * agentsPerSeries].Run();
+            }
+            notFinishedAgents = agentsPerSeries;
+        }
+
+        public void AgentFinished()
+        {
+            notFinishedAgents--;
+            if(notFinishedAgents > 0)
             {
                 return;
             }
 
-            GetComponent<GeneticManager>().Cross(ref agents);
-
-            AliveAgents = AgentCount;
-            TrackManager.Instance.Restart();
+            for (int i = 0; i < agentsPerSeries; i++)
+            {
+                if(Agents.Length <= i + CurrentSeries * agentsPerSeries)
+                {
+                    return;
+                }
+                Agents[i + CurrentSeries * agentsPerSeries].CloseProcess();
+            }
+            CurrentSeries++;
+            if(SimulationManager.Status != SimulationStatus.GENETICS)
+                SimulationManager.ChangeStatus(SimulationStatus.PYTHON);
         }
-
     }
 }

@@ -3,36 +3,18 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace PSI
 {
     public class AsyncProcess
     {
-        private readonly string appName;
-        private readonly Process process = new Process();
+        private string appName;
+        private Process process;
         private readonly object theLock = new object();
         private SynchronizationContext context;
         public string pendingWriteData;
 
-        public AsyncProcess(string appName, bool createWindow = false)
-        {
-            this.appName = appName;
-
-            this.process.StartInfo.FileName = this.appName;
-            this.process.StartInfo.RedirectStandardError = true;
-            this.process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
-
-            this.process.StartInfo.RedirectStandardInput = true;
-            this.process.StartInfo.RedirectStandardOutput = true;
-            this.process.EnableRaisingEvents = true;
-            this.process.StartInfo.CreateNoWindow = !createWindow;
-
-            this.process.StartInfo.UseShellExecute = false;
-
-            this.process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-
-            this.process.Exited += this.ProcessOnExited;
-        }
 
         public event EventHandler<string> ErrorTextReceived;
         public event EventHandler ProcessExited;
@@ -41,6 +23,8 @@ namespace PSI
         private Task StarnardReadTask;
         private Task ErrorReadTask;
         private Task WriteTask;
+
+        private StreamWriter writer;
 
         public int ExitCode
         {
@@ -52,8 +36,25 @@ namespace PSI
             get; private set;
         }
 
-        public void ExecuteAsync(params string[] args)
+        public void ExecuteAsync(string appName, params string[] args)
         {
+            this.process = new Process();
+            this.appName = appName;
+
+            this.process.StartInfo.FileName = this.appName;
+            this.process.StartInfo.RedirectStandardError = true;
+            this.process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+
+            this.process.StartInfo.RedirectStandardInput = true;
+            this.process.StartInfo.RedirectStandardOutput = true;
+            this.process.EnableRaisingEvents = true;
+            this.process.StartInfo.CreateNoWindow = true;
+
+            this.process.StartInfo.UseShellExecute = false;
+
+            this.process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+
+            this.process.Exited += this.ProcessOnExited;
             if (this.Running)
             {
                 throw new InvalidOperationException(
@@ -70,14 +71,21 @@ namespace PSI
             this.Running = true;
 
             new Task(this.ReadOutputAsync).Start();
-            new Task(this.WriteInputTask).Start();
+            //new Task(this.WriteInputTask).Start();
             new Task(this.ReadOutputErrorAsync).Start();
         }
 
         public void Close()
         {
-            process.Close();
+            if(process.HasExited)
+            {
+                return;
+            }
 
+            if(writer != null) writer.Close();
+            process.Kill();
+            process.WaitForExit();
+            Running = false;
         }
 
         public void Write(string data)
@@ -95,8 +103,14 @@ namespace PSI
 
         public void WriteLine(string data)
         {
-            this.Write(data + Environment.NewLine);
+            if (Running == false)
+                return;
+
+            writer = process.StandardInput;
+            writer.WriteLine(data);
+            writer.Flush();
         }
+
 
         protected virtual void OnErrorTextReceived(string e)
         {

@@ -76,6 +76,8 @@ weights = json.load(input_file)
 weightsList = [len(w) for w in weights]
 n = net(weightsList, outputs)
 
+print("Started")
+
 while True:
     com = input()
     args = np.array(com.split(' '))

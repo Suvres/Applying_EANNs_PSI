@@ -6,7 +6,7 @@ namespace PSI
 {
     public class CarController : MonoBehaviour
     {
-        private const float MAX_CHECKPOINT_DELAY = 7;
+        private const float MAX_CHECKPOINT_DELAY = 10;
 
         private CarMovement movement;
         private CarSensor sensor;
@@ -40,30 +40,16 @@ namespace PSI
             sensor = GetComponentInChildren<CarSensor>();
         }
 
-        public void Construct(int Id, uint parameterCount)
-        {
-            id = Id;
-            Agent = new Agent("Car_"+id, parameterCount);
-            Agent.controller = this;
-        }
-
-        public void msg(string txt)
-        {
-            Debug.Log(txt);
-        }
-
-        float timer = 0.0f;
         public void Update()
         {
             timeSinceLastCheckpoint += Time.deltaTime;
-            timer += Time.deltaTime;
             reward = Reward;
         }
 
         bool waiting = false;
         public void FixedUpdate()
         {
-            if (!Alive)
+            if (!Agent.Running)
                 return;
 
             if (timeSinceLastCheckpoint > MAX_CHECKPOINT_DELAY)
@@ -75,17 +61,12 @@ namespace PSI
             if (waiting) 
                 return;
 
-            if (timer < 1.0f)
-                return;
-            timer = 0.0f;
-
             waiting = true;
             Agent.SendInput(sensor.Values);
         }
 
         public void ReciveOutput(float[] outputs)
         {
-            //Agent.CloseProcess();
             movement.SetInputs(outputs);
             waiting = false;
         }
@@ -100,9 +81,9 @@ namespace PSI
 
         public void Die()
         {
-            Alive = false;
-            Agent.CloseProcess();
-            AgentsManager.Get().DescreaseAlive();
+            movement.SetInputs(new float[] { 0f, 0f });
+            Agent.Finish();
+            AgentsManager.Instance.AgentFinished();
         }
 
         public void CheckpointCaptured()
@@ -113,9 +94,24 @@ namespace PSI
         public void Restart()
         {
             movement.SetInputs(new float[] { 0f, 0f });
-            Agent.Reset();
-            Alive = true;
             timeSinceLastCheckpoint = 0;
+        }
+
+        public void Link()
+        {
+            Agent.OnOutputRecived += Agent_OnOutputRecived;
+            Agent.OnFinished += Agent_OnFinished;
+        }
+
+        private void Agent_OnFinished(object sender, System.EventArgs e)
+        {
+            AgentsManager.Instance.AgentFinished();
+        }
+
+        private void Agent_OnOutputRecived(object sender, float[] e)
+        {
+            movement.SetInputs(e);
+            waiting = false;
         }
     }
 }

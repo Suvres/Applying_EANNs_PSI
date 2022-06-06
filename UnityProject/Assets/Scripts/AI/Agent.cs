@@ -6,84 +6,99 @@ using UnityEngine;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-/*
-public static Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default(CancellationToken))
-{
-    if (process.HasExited) return Task.CompletedTask;
 
-    var tcs = new TaskCompletionSource<object>();
-    process.EnableRaisingEvents = true;
-    process.Exited += (sender, args) => tcs.TrySetResult(null);
-    if (cancellationToken != default(CancellationToken))
-        cancellationToken.Register(() => tcs.SetCanceled());
-
-    return process.HasExited ? Task.CompletedTask : tcs.Task;
-}
-*/
 namespace PSI
 { 
     public class Agent : IComparer, IComparable
     {
-        private string Name;
+        private int id;
+        private int outputCount;
+
+        public event EventHandler OnFinished;
+        public event EventHandler<float[]> OnOutputRecived;
+
+        public bool Running
+        { 
+            get; 
+            private set; 
+        }
 
         public Genotype Genotype
         {
             get;
-            private set;
+            set;
         }
 
-        public CarController controller;
-        public AsyncProcess process;
+        private AsyncProcess process;
 
-        public Agent(string Name, uint parameterCount)
+        public Agent(int id, int parameterCount, int outputCount)
         {
-            this.Name = Name;
-            Genotype = PSI.Genotype.GenerateRandom(parameterCount, -1.0f, 1.0f);
-            process = new AsyncProcess("b:/programy/python3_9/python.exe", false);
-
-            //CreateProcess();
+            this.id = id;
+            this.Genotype = PSI.Genotype.GenerateRandom(parameterCount, -1.0f, 1.0f);
+            this.outputCount = outputCount;
         }
 
-        ~Agent()
+        public Agent(int id, Genotype genotype, int outputCount)
         {
-            CloseProcess();
+            this.id = id;
+            this.Genotype = genotype;
+            //this.process = new AsyncProcess("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", false);
+            this.outputCount = outputCount;
+        }
+
+        public void Run()
+        {
+            CreateProcess();
+        }
+
+        public void Finish()
+        {
+           //OnFinished?.Invoke(this, EventArgs.Empty);
+            Running = false;
+            //process.Close();
         }
 
         private void Process_StandartTextReceived(object sender, string e)
         {
-            //controller.msg(e);
-
-            float[] outputs = new float[AgentsManager.Get().outputNum];
-
-            string[] outputsStr = e.Replace('.', ',').Split(' ');
-            for (int i = 0; i < outputsStr.Length; i++)
+            if (Running == false)
             {
-                float.TryParse(outputsStr[i], out outputs[i]);
+                Running = true;
+                return;
             }
 
-            controller.ReciveOutput(outputs);
+            float[] output = new float[outputCount];
+
+            string[] outputsStr = e.Replace('.', ',').Split(' ');
+            ConsoleHandle.Log(e);
+            for (int i = 0; i < outputCount; i++)
+            {
+                float.TryParse(outputsStr[i], out output[i]);
+            }
+
+            OnOutputRecived?.Invoke(this, output);
         }
 
         private void Process_ErrorTextReceived(object sender, string e)
         {
-            controller.msg(e);
-            //controller.Die();
+            //ConsoleHandle.Log("Error: " + e);
         }
 
         public void CreateProcess()
         {
-            string fileName = Name + ".json";
+            process = new AsyncProcess();
+
+            string fileName = id.ToString() + ".json";
             Genotype.GenerateWeightsFile(fileName);
 
             string MainFile = "Assets/Scripts/Python/main_2.py";
             string WeightFileName = fileName;
-            string OutputCount = AgentsManager.Get().outputNum.ToString();
+            string OutputCount = outputCount.ToString();
             string[] arguments = new string[] { MainFile, WeightFileName, OutputCount };
 
             process.ErrorTextReceived += Process_ErrorTextReceived;
             process.StandartTextReceived += Process_StandartTextReceived;
 
-            process.ExecuteAsync(arguments);
+            process.ExecuteAsync("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", arguments);
         }
 
         public void SendInput(float[] inputs)
@@ -97,7 +112,6 @@ namespace PSI
                 arguments += " " + inputs[i].ToString();
             }
             arguments = arguments.Replace(',', '.');
-            //controller.msg(arguments);
             process.WriteLine(arguments);
         }
 
@@ -115,19 +129,19 @@ namespace PSI
 
         public int Compare(object x, object y)
         {
-            return  (((Agent)x).Genotype.Evaluation < ((Agent)y).Genotype.Evaluation)?-1 : 
-                (((Agent)x).Genotype.Evaluation > ((Agent)y).Genotype.Evaluation) ? 1 : 0;
+            return  (((Agent)x).Genotype.Fitness < ((Agent)y).Genotype.Fitness) ?-1 : 
+                (((Agent)x).Genotype.Fitness > ((Agent)y).Genotype.Fitness) ? 1 : 0;
         }
 
         public void GenerateWeightsFile()
         {
-            Genotype.GenerateWeightsFile(Name);
+            Genotype.GenerateWeightsFile(id.ToString()+".json");
         }
 
         public int CompareTo(object obj)
         {
-            return (((Agent)this).Genotype.Evaluation < ((Agent)obj).Genotype.Evaluation) ? -1 :
-                (((Agent)this).Genotype.Evaluation > ((Agent)obj).Genotype.Evaluation) ? 1 : 0;
+            return (((Agent)this).Genotype.Fitness < ((Agent)obj).Genotype.Fitness) ? -1 :
+                (((Agent)this).Genotype.Fitness > ((Agent)obj).Genotype.Fitness) ? 1 : 0;
         }
     }
 }

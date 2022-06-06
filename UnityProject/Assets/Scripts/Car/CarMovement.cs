@@ -30,8 +30,11 @@ namespace PSI
 
         public void FixedUpdate()
         {
-            if (!Controller.Alive)
+            if (!Controller.Agent.Running)
+            {
+                Velocity = 0.0f;
                 return;
+            }
 
             ApplyInput();
             ApplyVelocity();

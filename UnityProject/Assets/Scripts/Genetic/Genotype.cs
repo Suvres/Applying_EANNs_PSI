@@ -43,6 +43,7 @@ namespace PSI
         {
             parameters = Parameters;
             Fitness = 0;
+            Evaluation = 0;
         }
 
         public void SetRandomParameters(float minValue, float maxValue)
@@ -65,7 +66,7 @@ namespace PSI
 
         public bool GenerateWeightsFile(string Name)
         {
-            uint[] Layers = AgentsManager.Get().Topology;
+            uint[] Layers = AgentsManager.Instance.Topology;
 
             string json = "[";
             int c = 0;
@@ -98,10 +99,10 @@ namespace PSI
             return true;
         }
 
-        public static Genotype GenerateRandom(uint parameterCount, float minValue, float maxValue)
+        public static Genotype GenerateRandom(int parameterCount, float minValue, float maxValue)
         {
-            //Check arguments
-            if (parameterCount == 0) return new Genotype(new float[0]);
+            if (parameterCount <= 0) 
+                return new Genotype(new float[0]);
 
             Genotype randomGenotype = new Genotype(new float[parameterCount]);
             randomGenotype.SetRandomParameters(minValue, maxValue);
