@@ -101,6 +101,12 @@ namespace PSI
                 }
             }
         }
+
+        public void Reset()
+        {
+            Velocity = 0.0f;
+            Rotation = Quaternion.identity;
+        }
     }
 
 }

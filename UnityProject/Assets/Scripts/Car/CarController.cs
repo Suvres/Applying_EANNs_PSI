@@ -49,18 +49,19 @@ namespace PSI
         bool waiting = false;
         public void FixedUpdate()
         {
+            
             if (!Agent.Running)
                 return;
-
+            Debug.Log("time");
             if (timeSinceLastCheckpoint > MAX_CHECKPOINT_DELAY)
             {
                 Die();
                 return;
             }
-
+            Debug.Log("wait");
             if (waiting) 
                 return;
-
+            Debug.Log("send");
             waiting = true;
             Agent.SendInput(sensor.Values);
         }
@@ -95,6 +96,8 @@ namespace PSI
         {
             movement.SetInputs(new float[] { 0f, 0f });
             timeSinceLastCheckpoint = 0;
+            waiting = false;
+            movement.Reset();
         }
 
         public void Link()

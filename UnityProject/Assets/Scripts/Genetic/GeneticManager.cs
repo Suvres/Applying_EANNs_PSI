@@ -52,11 +52,6 @@ namespace PSI
             }
         }
 
-        public void Mutate_1(ref Genotype genotype)
-        {
-
-        }
-
         public void Run(Agent[] agents)
         {
             float averageEvaluation = 0.0f;
