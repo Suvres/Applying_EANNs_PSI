@@ -23,6 +23,11 @@ namespace PSI
         [SerializeField]
         private GameObject carPrefab;
 
+        [SerializeField]
+        private CameraController camera;
+
+
+
         private class Car
         {
             public Car(CarController controller = null, uint checkpointIndex = 1)
@@ -57,6 +62,7 @@ namespace PSI
             {
                 var car = Instantiate(carPrefab, StartPoint.position, StartPoint.rotation);
                 var controller = car.GetComponent<CarController>();
+                controller.id = i;
                 cars.Add(new Car(controller, 0));
             }
         }
@@ -94,10 +100,24 @@ namespace PSI
             if (!SimulationManager.Running)
                 return;
 
+            float bestCarReward = -1000.0f;
+            CarController bestCar = null;
+
             foreach(var car in cars)
             {
-                if(car.Controller.Agent.Running)
-                car.Controller.Reward = GetCompletePerc(car.Controller, ref car.CheckpointIndex);
+                if (car.Controller.Agent.Running)
+                {
+                    car.Controller.Reward = GetCompletePerc(car.Controller, ref car.CheckpointIndex);
+                    if(bestCarReward < car.Controller.Reward)
+                    {
+                        bestCar = car.Controller;
+                    }
+                }
+            }
+
+            if (bestCar)
+            {
+                camera.SetPosition(bestCar.transform.position);
             }
         }
 
@@ -107,16 +127,22 @@ namespace PSI
             {
                 return checkpoints.Length;
             }
+
+            if(curCheckpointIndex + 1 >= checkpoints.Length)
+            {
+                return checkpoints.Length * 1.5f;
+            }
             float distanceToNext = Vector3.Distance(car.transform.position, checkpoints[curCheckpointIndex + 1].transform.position);
-            if(distanceToNext < 3.0f)
+            if(distanceToNext < 2.0f)
             {
                 curCheckpointIndex++;
                 car.CheckpointCaptured();
-                return curCheckpointIndex;
+                return curCheckpointIndex / checkpoints.Length;
             }
 
+
             float currentPercentage = ( checkpoints[curCheckpointIndex].DistanceToNext - distanceToNext )/ checkpoints[curCheckpointIndex].DistanceToNext;
-            return curCheckpointIndex + currentPercentage;
+            return (curCheckpointIndex + currentPercentage) / checkpoints.Length;
         }
     }
 }

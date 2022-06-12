@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace PSI
 {
+
     public class AgentsManager : MonoBehaviour
     {
         private static AgentsManager instance;
@@ -11,6 +12,7 @@ namespace PSI
         {
             get => instance;
         }
+
 
         [SerializeField] private int series;
         [SerializeField] private int agentsPerSeries;
@@ -50,6 +52,40 @@ namespace PSI
             notFinishedAgents = 0;
         }
 
+        private bool running = false;
+
+        public void Update()
+        {
+            if (SimulationManager.Status != SimulationStatus.PYTHON)
+                return;
+
+            int runningCount = 0;
+            int activeCount = 0;
+            for (int i = 0; i < agentsPerSeries; i++)
+            {
+                int index = i + CurrentSeries * agentsPerSeries;
+                activeCount += (Agents[index].Active) ? 1 : 0;
+                runningCount += (Agents[index].Running) ? 1 : 0;
+            }
+
+            if (running == false && activeCount == agentsPerSeries)
+            {
+                running = true;
+                for (int i = 0; i < agentsPerSeries; i++)
+                {
+                    Agents[i + CurrentSeries * agentsPerSeries].Running = true;
+                }
+                return;
+            }
+
+            if (running == true && runningCount == 0)
+            {
+                running = false;
+                AgentFinished();
+            }
+
+           
+        }
         public void Spawn()
         {
             int weightCount = 0;
@@ -85,19 +121,11 @@ namespace PSI
 
         public void AgentFinished()
         {
-            notFinishedAgents--;
-            if(notFinishedAgents > 0)
-            {
-                return;
-            }
-
+            //Debug.Log("----------------- Close series " + CurrentSeries);
             for (int i = 0; i < agentsPerSeries; i++)
             {
-                if(Agents.Length <= i + CurrentSeries * agentsPerSeries)
-                {
-                    return;
-                }
-                Agents[i + CurrentSeries * agentsPerSeries].CloseProcess();
+                int index = i + CurrentSeries * agentsPerSeries;
+                Agents[index].CloseProcess();
             }
             CurrentSeries++;
             if(SimulationManager.Status != SimulationStatus.GENETICS)

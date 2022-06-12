@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PSI
 {
@@ -11,9 +12,11 @@ namespace PSI
         private CarMovement movement;
         private CarSensor sensor;
 
-        private float timeSinceLastCheckpoint = 0.0f;
+        public float timeSinceLastCheckpoint = MAX_CHECKPOINT_DELAY;
 
-        private int id;
+        public int id;
+
+        private Text text;
 
         public bool Alive
         {
@@ -32,36 +35,40 @@ namespace PSI
             get { return Agent.Genotype.Evaluation; }
             set { Agent.Genotype.Evaluation = value; }
         }
-        public float reward;
 
         public void Awake()
         {
             movement = GetComponent<CarMovement>();
             sensor = GetComponentInChildren<CarSensor>();
+            text = GetComponentInChildren<Text>();
         }
 
         public void Update()
         {
-            timeSinceLastCheckpoint += Time.deltaTime;
-            reward = Reward;
+            timeSinceLastCheckpoint -= Time.deltaTime;
+            text.text = Reward.ToString();
         }
 
-        bool waiting = false;
+        private bool waiting = false;
+
         public void FixedUpdate()
         {
-            
-            if (!Agent.Running)
-                return;
-            Debug.Log("time");
-            if (timeSinceLastCheckpoint > MAX_CHECKPOINT_DELAY)
+            if (Agent.Running == false)
             {
-                Die();
                 return;
             }
-            Debug.Log("wait");
-            if (waiting) 
+
+            if (timeSinceLastCheckpoint <= 0.0f)
+            {
+                Die("timeout");
                 return;
-            Debug.Log("send");
+            }
+
+            if (waiting)
+            {
+                return;
+            }
+
             waiting = true;
             Agent.SendInput(sensor.Values);
         }
@@ -76,26 +83,27 @@ namespace PSI
         {
             if (other.gameObject.CompareTag("Wall"))
             {
-                Die();
+                Die("collision");
             }
         }
 
-        public void Die()
+        public void Die(string Context)
         {
+            //Debug.Log("Car " + id + " " + Context);
             movement.SetInputs(new float[] { 0f, 0f });
             Agent.Finish();
-            AgentsManager.Instance.AgentFinished();
+            //AgentsManager.Instance.AgentFinished();
         }
 
         public void CheckpointCaptured()
         {
-            timeSinceLastCheckpoint = 0;
+            timeSinceLastCheckpoint = MAX_CHECKPOINT_DELAY;
         }
 
         public void Restart()
         {
             movement.SetInputs(new float[] { 0f, 0f });
-            timeSinceLastCheckpoint = 0;
+            timeSinceLastCheckpoint = MAX_CHECKPOINT_DELAY;
             waiting = false;
             movement.Reset();
         }
@@ -108,7 +116,7 @@ namespace PSI
 
         private void Agent_OnFinished(object sender, System.EventArgs e)
         {
-            AgentsManager.Instance.AgentFinished();
+            //AgentsManager.Instance.AgentFinished();
         }
 
         private void Agent_OnOutputRecived(object sender, float[] e)

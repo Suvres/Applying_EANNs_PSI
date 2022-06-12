@@ -77,12 +77,9 @@ namespace PSI
 
         public void Close()
         {
-            if(process.HasExited)
-            {
-                return;
-            }
+            if(writer != null) 
+                writer.Close();
 
-            if(writer != null) writer.Close();
             process.Kill();
             process.WaitForExit();
             Running = false;

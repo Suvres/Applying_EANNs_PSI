@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PSI
 { 
-    public class Agent : IComparer, IComparable
+    public class Agent
     {
         private int id;
         private int outputCount;
@@ -20,7 +20,13 @@ namespace PSI
         public bool Running
         { 
             get; 
-            private set; 
+            set; 
+        }
+
+        public bool Active
+        {
+            get;
+            set;
         }
 
         public Genotype Genotype
@@ -42,7 +48,6 @@ namespace PSI
         {
             this.id = id;
             this.Genotype = genotype;
-            //this.process = new AsyncProcess("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", false);
             this.outputCount = outputCount;
         }
 
@@ -53,16 +58,14 @@ namespace PSI
 
         public void Finish()
         {
-           //OnFinished?.Invoke(this, EventArgs.Empty);
             Running = false;
-            //process.Close();
         }
 
         private void Process_StandartTextReceived(object sender, string e)
         {
-            if (Running == false)
+            if (Running == false && Active == false)
             {
-                Running = true;
+                Active = true;
                 return;
             }
 
@@ -74,7 +77,6 @@ namespace PSI
 
             for (int i = 0; i < outputCount; i++)
             {
-                //ConsoleHandle.Log(outputCount + " / " + output.Length + " / " + outputsStr.Length + " / " + i + " / " + e);
                 float.TryParse(outputsStr[i], out output[i]);
             }
 
@@ -101,8 +103,8 @@ namespace PSI
             process.ErrorTextReceived += Process_ErrorTextReceived;
             process.StandartTextReceived += Process_StandartTextReceived;
 
-            process.ExecuteAsync("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", arguments);
-            //process.ExecuteAsync("B:/Programy/Python3_9/python.exe", arguments);
+            //process.ExecuteAsync("C:/Users/filek/AppData/Local/Programs/Python/Python39/python.exe", arguments);
+            process.ExecuteAsync("B:/Programy/Python3_9/python.exe", arguments);
         }
 
         public void SendInput(float[] inputs)
@@ -121,6 +123,7 @@ namespace PSI
 
         public void CloseProcess()
         {
+            Active = false;
             process.Close();
         }
 
@@ -131,21 +134,9 @@ namespace PSI
             CreateProcess();
         }
 
-        public int Compare(object x, object y)
-        {
-            return  (((Agent)x).Genotype.Fitness < ((Agent)y).Genotype.Fitness) ?-1 : 
-                (((Agent)x).Genotype.Fitness > ((Agent)y).Genotype.Fitness) ? 1 : 0;
-        }
-
         public void GenerateWeightsFile()
         {
-            Genotype.GenerateWeightsFile(id.ToString()+".json");
-        }
-
-        public int CompareTo(object obj)
-        {
-            return (((Agent)this).Genotype.Fitness < ((Agent)obj).Genotype.Fitness) ? -1 :
-                (((Agent)this).Genotype.Fitness > ((Agent)obj).Genotype.Fitness) ? 1 : 0;
+            Genotype.GenerateWeightsFile(id.ToString() + ".json");
         }
     }
 }

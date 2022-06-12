@@ -6,7 +6,7 @@ using General;
 
 namespace PSI
 {
-    public class Genotype
+    public class Genotype : IComparer, IComparable
     {
         private static Random randomizer = new Random();
 
@@ -42,6 +42,14 @@ namespace PSI
         public Genotype(float[] Parameters)
         {
             parameters = Parameters;
+            Fitness = 0;
+            Evaluation = 0;
+        }
+
+        public Genotype(Genotype genotype)
+        {
+            parameters = new float[genotype.ParameterCount];
+            genotype.parameters.CopyTo(parameters, 0);
             Fitness = 0;
             Evaluation = 0;
         }
@@ -108,6 +116,18 @@ namespace PSI
             randomGenotype.SetRandomParameters(minValue, maxValue);
 
             return randomGenotype;
+        }
+
+        public int Compare(object x, object y)
+        {
+            return (((Genotype)x).Fitness < ((Genotype)y).Fitness) ? 1 :
+                (((Genotype)x).Fitness > ((Genotype)y).Fitness) ? -1 : 0;
+        }
+
+        public int CompareTo(object obj)
+        {
+            return (((Genotype)this).Fitness < ((Genotype)obj).Fitness) ? 1 :
+                (((Genotype)this).Fitness > ((Genotype)obj).Fitness) ? -1 : 0;
         }
     }
 }
